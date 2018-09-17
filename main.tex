@@ -1,0 +1,119 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.0in]{geometry}
+
+\usepackage[T1]{fontenc}
+
+
+%%%
+%%%  Lists
+%%%
+\usepackage{enumitem}
+\setlist{itemsep=0.5ex,parsep=0pt}             % more compact lists
+
+%%%
+\usepackage{fancyhdr}
+\usepackage{xspace}
+%\usepackage{enumerate}
+\usepackage{verbatim}
+\usepackage{url}
+\usepackage{latexsym,amsthm,amsmath,amsfonts,amssymb,stmaryrd,mathtools}
+
+\usepackage[usenames]{color}
+\usepackage{graphicx}
+\usepackage{syntax}
+\usepackage[retainorgcmds]{IEEEtrantools}
+\usepackage{lipsum}
+\usepackage{listings}
+\usepackage{wrapfig}
+\usepackage{subfig}
+\usepackage{adjustbox}
+\usepackage[british]{babel}
+
+\lstdefinelanguage{pcpp}{%
+  language     = C++,
+  morekeywords = {type,then,assert,match,with,as,spawn,parallel_for,real,where,foreach,send,recv,let},
+  keywordstyle=\ttfamily\bfseries
+}
+
+%%%
+%%%  Tables
+%%%
+\usepackage{booktabs}
+%\usepackage{color}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{supertabular}
+%%%
+
+\usepackage{amsthm}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{invariant}{Invariant}[section]
+\newtheorem{property}{Property}[section]
+
+\newcommand{\pcvar}[1]{\mathtt{#1}}
+
+\usepackage[colorlinks,
+citecolor=Sepia,
+linkcolor=Blue,
+pagebackref=true    
+%pagebackref=true      turn this on and off for citation back references.
+]{hyperref}%         % for online version
+
+\usepackage{natbib}
+\usepackage{url}
+
+\usepackage{txfonts}
+
+%\input{mac}
+\input{local} % loads lstlisting settings
+\input{local2}
+
+\lstdefinestyle{nonumbers}
+{numbers=none}
+
+\newcommand{\pt}[1]{\noindent
+  {\color{blue}{\textbf{Point.}#1}}\smallskip}
+\newcommand{\q}[1]{\noindent {\color{red}{\textbf{Question:} #1}}\smallskip}
+
+\title{Flexible chunked sequences from simple rules}
+\author{}
+
+%%% this package has to be right before begin{doc}
+\usepackage{microtype}
+\begin{document}
+
+\maketitle
+
+%******************************************************************************
+\section{Introduction}
+
+\paragraph{Sequence notation.} We are going to use the usual mathematical
+notation for sequences: the sequence $xs = [x_0, \ldots, x_n]$
+contains $n + 1$ elements, starting with $x_0$ and ending with
+$x_n$. Given two sequences, $xs = [x_0, \ldots, x_n]$ and $xs = [y_0,
+  \ldots, y_m]$, we denote the concatenation by $xs \oplus ys = [x_0,
+  \ldots, x_n, y_0, \ldots, y_m]$.
+
+\begin{figure}
+  \hspace{-0.6cm}
+  \begin{center}
+\begin{tabular}{>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}}
+  \speccode{push\_back} \, \delta \, (\_, xs) \, x & : & \speccode{Wf}(\alpha) \rightarrow \speccode{Chunk}(\alpha, K) \rightarrow \alpha \rightarrow \speccode{Chunk}(\alpha, K) & = & [x] \oplus xs \\
+  \speccode{size}(\_, [x_0, \ldots, x_n]) & : & \speccode{Chunk}(\alpha, K) \rightarrow \tyname{N} & = & n + 1 \\
+
+\end{tabular}
+\vspace{0.3cm}
+\end{center}
+  \caption{Specification of chunks.}
+\label{fig:chunk-specification}
+\end{figure}
+
+\bibliographystyle{plain}
+\bibliography{biblio}
+
+\end{document}

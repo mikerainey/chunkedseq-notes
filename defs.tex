@@ -1,0 +1,83 @@
+\newcommand{\dtype}[1]{\mathbb{#1}}
+\newcommand{\cactusty}{\dtype{C}}
+\newcommand{\mcode}[1]{\mathtt{#1}}
+\newcommand{\framefty}{\dtype{F}}
+\newcommand{\framety}{\mathtt{f}}
+\newcommand{\framelinkty}{\mcode{L}}
+\newcommand{\framebreakable}{\mcode{Async}}
+\newcommand{\frameunbreakable}{\mcode{Sync}}
+\newcommand{\framelinktypename}{\mathrm{LinkType}}
+\newcommand{\framelinktype}[1]{\framelinktypename(#1)}
+\newcommand{\stackbreakname}{\mathrm{ForkMark}}
+\newcommand{\stackbreak}[1]{\stackbreakname(#1)}
+\newcommand{\stackbreakzname}{\mcode{No\_fork}}
+%\newcommand{\stackbreakoname}{\mcode{Frk1}}
+\newcommand{\stackbreaknname}{\mcode{Fork}}
+\newcommand{\stackbreakz}{\stackbreakzname}
+\newcommand{\stackbreako}[3]{\stackbreakoname \, (#2 #1 #3)}
+\newcommand{\stackbreakn}[5]{\stackbreaknname \, (#2 #1 #3 #1 #4 #1 #5)}
+
+\newcommand{\CSbuiltin}[1]{\mathrm{#1}}
+\newcommand{\CSExtract}[2]{\CSbuiltin{AllFrames}(#1, #2)}
+\newcommand{\CSExtractBreakableName}{\CSbuiltin{MarkedFrames\triangleright}}
+\newcommand{\CSExtractBreakable}[1]{\CSExtractBreakableName(#1)}
+\newcommand{\CSExtractBreakableBkwName}{\CSbuiltin{MarkedFrames\triangleleft}}
+\newcommand{\CSExtractBreakableBkw}[1]{\CSExtractBreakableBkwName(#1)}
+\newcommand{\CSFrames}[2]{\CSbuiltin{AllFramePtrs}(#1, #2)}
+\newcommand{\CSBreakableFramesName}{\CSbuiltin{MarkedFramePtrs\triangleright}}
+\newcommand{\CSBreakableFrames}[1]{\CSBreakableFramesName(#1)}
+\newcommand{\CSBreakableFramesBkwName}{\CSbuiltin{MarkedFramePtrs\triangleleft}}
+\newcommand{\CSBreakableFramesBkw}[1]{\CSBreakableFramesBkwName(#1)}
+\newcommand{\CSChunks}[1]{\CSbuiltin{ChunkPtrs}(#1)}
+\newcommand{\CSRefcount}[2]{\CSbuiltin{RefcountOfStack}(#1, #2)}
+\newcommand{\CSRefcountN}[2]{\CSbuiltin{RefcountOfMachine}(#1, #2)}
+\newcommand{\CSCompatible}[3]{\CSbuiltin{Compatible}(#1, #2, #3)}
+\newcommand{\CSMachineFrame}[1]{\CSbuiltin{MachineFrame}(#1)}
+\newcommand{\CSPredN}[2]{\overline{\CSbuiltin{Pred}}(#1, #2)}
+\newcommand{\CSPred}[1]{\CSbuiltin{Pred}(#1)}
+\newcommand{\CSPredSP}[1]{\CSbuiltin{PredSP}(#1)}
+\newcommand{\CSPredLP}[1]{\CSbuiltin{PredLP}(#1)}
+\newcommand{\CSSuccName}{\CSbuiltin{Succ\triangleright}}
+\newcommand{\CSSucc}[1]{\CSSuccName(#1)}
+\newcommand{\CSSuccBkwName}{\CSbuiltin{Pred\triangleleft}}
+\newcommand{\CSSuccBkw}[1]{\CSSuccBkwName(#1)}
+\newcommand{\CSSize}[1]{\CSbuiltin{StackSize}(#1)}
+\newcommand{\CSConsistent}[3]{\CSbuiltin{Consistent}(#1, #2, #3)}
+\newcommand{\CSAdmissible}[2]{\CSbuiltin{Admissible}(#1, #2)}
+\newcommand{\CSFutures}[2]{\CSbuiltin{Futures}(#1, #2)}
+\newcommand{\CSstack}{\cactusty}
+\newcommand{\prods}{\mathrel{::=}\,}
+\newcommand{\myeq}{\mathrel{=}\,}
+\newcommand{\myconcat}{\oplus}
+\newcommand{\CSMachineThreadsName}{\mathrm{ThreadsOf}}
+\newcommand{\CSMachineThreads}[1]{\CSMachineThreadsName(#1)}
+\newcommand{\CSMachineStacksName}{\mathrm{StacksOf}}
+\newcommand{\CSMachineStacks}[1]{\CSMachineStacksName(#1)}
+\newcommand{\CSLiveChunksName}{\mathrm{LiveChunksOf}}
+\newcommand{\CSLiveChunks}[1]{\CSLiveChunksName(#1)}
+\newcommand{\CSRangesName}{\mathrm{FrameAddrs}}
+\newcommand{\CSRanges}[2]{\CSRangesName(#1, #2)}
+\newcommand{\CSNurseryRangesName}{\mathrm{AllogRegAddrs}}
+\newcommand{\CSNurseryRanges}[3]{\CSNurseryRangesName(#1, #2, #3)}
+
+\newcommand{\ihatelatex}{s \oplus [f]}
+
+\lstdefinestyle{nonumbers}
+{numbers=none}
+
+\newcommand{\ctxname}[1]{\overleftarrow{\mathtt{#1}}}
+
+
+\newcommand{\sharedframefty}{\dtype{S}}
+\newcommand{\privateframefty}{\dtype{P}}
+\newcommand{\splittableloopname}{\mathrm{Splittable}}
+\newcommand{\splittableloop}[1]{\splittableloopname(#1)}
+\newcommand{\stackbreakloopname}{\mcode{Loop\_split}}
+\newcommand{\stackbreakloop}[4]{\stackbreakloopname \, (#2 #1 #3 #1 #4)}
+\newcommand{\cactustylp}{\cactusty'}
+\newcommand{\frameftylp}{\dtype{F}'}
+\newcommand{\stackbreaknamelp}{\mathrm{ForkMark}'}
+\newcommand{\stackbreaklp}[1]{\stackbreaknamelp(#1)}
+\newcommand{\peekmarkresfork}{\mcode{Pk\_fork}}
+\newcommand{\peekmarkressplit}{\mcode{Pk\_split}}
+\newcommand{\peekmarkresnone}{\mcode{Pk\_none}}

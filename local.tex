@@ -1,0 +1,80 @@
+
+% Syntax highlighting
+\newdimen\zzlistingsize
+\newdimen\zzlistingsizedefault
+\zzlistingsizedefault=9pt
+\newdimen\kwlistingsize
+\kwlistingsize=9pt
+\zzlistingsize=\zzlistingsizedefault
+\gdef\lco{black}
+\newcommand{\lcRed}{\gdef\lco{nred}}
+\newcommand{\lcBlack}{\gdef\lco{black}}
+\newcommand{\lcNormal}{\lcBlack}
+\newcommand{\lcBlue}{\gdef\lco{nblue}}
+\newcommand{\lcGreen}{\gdef\lco{ngreen}}
+\newcommand{\lcPurple}{\gdef\lco{npurple}}
+\newcommand{\Lstbasicstyle}{\fontsize{\zzlistingsize}{1.1\zzlistingsize}\ttfamily\color{\lco}}
+%\newcommand{\keywordstyle}{\fontsize{0.9\zzlistingsize}{1.0\zzlistingsize}\bf}
+%\newcommand{\keywordstyle}{\fontsize{\kwlistingsize}{1.1\kwlistingsize}\normalfont\bf\color{\lco}}
+\newcommand{\keywordstyle}{\fontsize{1.09\kwlistingsize}{\kwlistingsize}\normalfont\bf\color{\lco}}
+\newlength{\zzlstwidth}
+\settowidth{\zzlstwidth}{{\Lstbasicstyle~}}
+\newcommand{\lcm}{\color{\lco}}
+
+\newcommand{\tts}{\texttt{\$S}}
+\newcommand{\ttc}{\texttt{\$C}}
+
+\lstset{
+  basewidth=\zzlstwidth,
+%  basicstyle=\Lstbasicstyle,
+  basicstyle=\small\ttfamily,
+%  identifierstyle=,
+  numbers=left, numberstyle=\tiny, numbersep=5pt,
+%  frame=single,
+  keywordstyle=\keywordstyle,
+  keywords={fun,cfun,sfun,read,case,of,type,functor,structure,signature,sig,struct,datatype,let,letpar,val,fn,in,end,as,select,mod,apply,sapply,capply,write},  %nil,cons,
+  commentstyle=\rmfamily\slshape\color{\lco},
+  morecomment=[n]{(*}{*)},
+  lineskip={-0pt},
+%  columns=[l]flexible,
+  columns=[l]fullflexible,
+  keepspaces=true,
+  mathescape=true,
+% NOTE: need TWO sets of braces around each definition below!
+  literate={=>}{{$\lcm\Rightarrow$}}1 %
+%           {fn}{{$\lambda$}}1 %
+           {Mod}{{$\lcGreen\text{\Lstbasicstyle Mod}\lcNormal$}}3 %
+           {Read}{{$\lcGreen\text{\Lstbasicstyle Read}\lcNormal$}}4 %
+           {Write}{{$\lcGreen\text{\Lstbasicstyle Write}\lcNormal$}}5 %
+           {sapply}{{$\lcm\text{\keywordstyle apply}^\S$}}6 %
+           {capply}{{$\lcm\text{\keywordstyle apply}^\C$}}6 %
+           {sfun}{{$\lcm\text{\keywordstyle fun}^\S$}}4 %
+           {cfun}{{$\lcm\text{\keywordstyle fun}^\C$}}4 %
+           {=\\S}{{$\lcm\text{\Lstbasicstyle=}\S$}}1
+           {=\\C}{{$\lcm\text{\Lstbasicstyle=}\C$}}1
+%           {^S}{{$\lcm^\S$}}1
+%           {^C}{{$\lcm^\C$}}1
+           {^S}{{$\lcm\;\,\tts$}}1
+           {^C}{{$\lcm\;\,\ttc$}}1
+           {^SS}{{$\lcm^{\S, \S}$}}1
+           {^SC}{{$\lcm^{\S, \C}$}}1
+           {^CS}{{$\lcm^{\C, \S}$}}1
+           {^CC}{{$\lcm^{\C, \C}$}}1
+           {^D}{{$\lcm^\delta$}}1
+           {^Dh}{{$\lcm^{\delta_h}$}}1
+           {^Dt}{{$\lcm^{\delta_t}$}}1
+           {->}{{$\lcm\rightarrow$}}2
+           {->^S}{{$\lcm\hspace{-1pt}\arrowsymbol{\S}\hspace{-1pt}$}}2
+           {->^C}{{$\lcm\hspace{-1pt}\arrowsymbol{\C}\hspace{-1pt}$}}2
+           {->^D}{{$\lcm\hspace{-1pt}\arrowsymbol{\delta}\hspace{-1pt}$}}2
+           {->^Dh}{{$\lcm\hspace{-1pt}\arrowsymbol{\delta_h}\hspace{-1pt}$}}2
+           {->^Dt}{{$\lcm\hspace{-1pt}\arrowsymbol{\delta_t}\hspace{-1pt}$}}2
+%           {-c->}{${c\rightarrow}$}3
+%           {-s->}{${s\rightarrow}$}3
+%           {-c->}{$\rightarrow$}1
+%           {-s->}{$\rightarrow$}1
+%           {_}{{\lcm\_}}1
+           {'a}{{$\alpha$}}1
+           {'b}{{$\beta$}}1
+           {'d}{{$\lcm\delta$}}1
+}
