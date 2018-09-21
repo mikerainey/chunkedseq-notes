@@ -30,8 +30,8 @@
 \usepackage[british]{babel}
 
 \lstdefinelanguage{pcpp}{%
-  language     = C++,
-  morekeywords = {if,let,then,else,with,in},
+  language     = [Objective]Caml,
+  morekeywords = {if,let,then,else,with,in,type},
   keywordstyle=\ttfamily\bfseries
 }
 
@@ -100,7 +100,194 @@ $x_n$. Given two sequences, $xs = [x_0, \ldots, x_n]$ and $xs = [y_0,
   \ldots, x_n, y_0, \ldots, y_m]$.
 
 \begin{lstlisting}[language=pcpp,style=nonumbers]
+type weight = int
 
+type $\alpha$ wf = ($\alpha$ $\rightarrow$ weight)
+
+type $\alpha$ chunkedseq
+  = Shallow of $\alpha$ chunk
+  | Deep of int $\times$ $\alpha$ deep
+
+type $\alpha$ deep = {
+  $\pcvar{f_o}$ : $\alpha$ chunk, $\pcvar{f_i}$ : $\alpha$ chunk,
+  m : ($\alpha$ chunk) chunkedseq,
+  $\pcvar{b_i}$ : $\alpha$ chunk, $\pcvar{b_o}$ : $\alpha$ chunk
+}
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+mk_deep : $\alpha$ deep $\rightarrow$ $\alpha$ chunkedseq
+mk_deep (d as {$\pcvar{f_o}$, $\pcvar{f_i}$, m, $\pcvar{b_i}$, $\pcvar{b_o}$}) =
+  let w = Chunk.weight $\pcvar{f_o}$ + Chunk.weight $\pcvar{f_i}$
+        + weight m
+        + Chunk.weight $\pcvar{b_i}$ + Chunk.weight $\pcvar{b_o}$
+  in
+  Deep (w, d)
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+mk_shallow : $\alpha$ chunk $\times$ $\alpha$ chunk $\times$ $\alpha$ chunk $\times$ $\alpha$ chunk
+  $\rightarrow$ $\alpha$ chunkedseq
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+push_front' : $\alpha$ wf $\rightarrow$ $\alpha$ chunkedseq $\times$ $\alpha$ $\rightarrow$ $\alpha$ chunkedseq
+push_front' $\delta$ (Shallow c, x) =
+  if Chunk.full c then
+    let m = Shallow Chunk.empty in
+    push_front' $\delta$ (mk_deep {$\pcvar{f_o}$=Chunk.empty, $\pcvar{f_i}$=Chunk.empty, m=m, $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=c}, x)
+  else
+    Shallow (Chunk.push_front $\delta$ (c, x))
+push_front' $\delta$ (Deep (_, {$\pcvar{f_o}$, $\pcvar{f_i}$, m, $\pcvar{b_i}$, $\pcvar{b_o}$} as d), x) =
+  if Chunk.full $\pcvar{f_o}$ then
+    if Chunk.is_empty $\pcvar{f_i}$ then
+      push_front' $\delta$ (mk_deep {d with $\pcvar{f_o}$=Chunk.empty, $\pcvar{f_i}$=$\pcvar{f_o}$}, x)
+    else
+      let m' = push_front' Chunk.weight (m, $\pcvar{f_i}$) in
+      push_front' $\delta$ (mk_deep {d with $\pcvar{f_o}$=Chunk.empty, $\pcvar{f_i}$=$\pcvar{f_o}$, m=m'}, x)
+  else
+    let $\pcvar{f_o}$' = Chunk.push_front $\delta$ ($\pcvar{f_o}$, x) in
+    mk_deep {d with $\pcvar{f_o}$=$\pcvar{f_o}$'}
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+check : $\alpha$ wf $\rightarrow$ $\alpha$ chunkedseq $\rightarrow$ $\alpha$ chunkedseq
+check $\delta$ (Shallow c) = assert false
+check $\delta$ (Deep (_, {$\pcvar{f_o}$, $\pcvar{f_i}$, m, $\pcvar{b_i}$, $\pcvar{b_o}$}) as s) =
+  let w = Chunk.weight $\pcvar{f_o}$ + Chunk.weight $\pcvar{f_i}$
+        + Chunk.weight $\pcvar{b_i}$ + Chunk.weight $\pcvar{b_o}$
+  in
+  if w = 0 $\wedge$ $\neg$ (is_empty m) then
+    let (m', $\pcvar{f_o}$') = pop_front' Chunk.weight m in
+    mk_deep {$\pcvar{f_o}$=$\pcvar{f_o}$', $\pcvar{f_i}$=Chunk.empty, m=m', $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=Chunk.empty}
+  else if w = 1 $\wedge$ is_empty m then
+    mk_shallow ($\pcvar{f_o}$, $\pcvar{f_i}$, $\pcvar{b_i}$, $\pcvar{b_o}$)
+  else if w = 0 $\wedge$ is_empty m then
+    Shallow Chunk.empty
+  else
+    s
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+mk_deep' : $\alpha$ wf $\rightarrow$ $\alpha$ deep $\rightarrow$ $\alpha$ chunkedseq
+mk_deep' $\delta$ = check $\delta$ $\circ$ mk_deep
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+pop_front' : $\alpha$ wf $\rightarrow$ $\alpha$ chunkedseq $\rightarrow$ ($\alpha$ chunkedseq $\times$ $\alpha$)
+pop_front' $\delta$ (Shallow c) =
+  let (c', x) = Chunk.pop_front $\delta$ c in
+  (Shallow c', x)
+pop_front' $\delta$ (Deep (_, {$\pcvar{f_o}$, $\pcvar{f_i}$, m, $\pcvar{b_i}$, $\pcvar{b_o}$} as d)) =
+  if Chunk.is_empty $\pcvar{f_o}$ then
+    if $\neg$ (Chunk.is_empty $\pcvar{f_i}$) then
+      pop_front' $\delta$ (mk_deep' $\delta$ {d with $\pcvar{f_o}$=$\pcvar{f_i}$, $\pcvar{f_i}$=Chunk.empty})
+    else if $\neg$ (is_empty m) then 
+      let (m', c) = pop_front' Chunk.weight m in
+      pop_front' $\delta$ (mk_deep' $\delta$ {d with $\pcvar{f_o}$=c, m=m'})
+    else if $\neg$ (Chunk.is_empty $\pcvar{b_i}$) then
+      pop_front' $\delta$ (mk_deep' $\delta$ {d with $\pcvar{f_o}$=$\pcvar{b_i}$, $\pcvar{b_i}$=Chunk.empty})
+    else
+      let ($\pcvar{b_o}$', x) = Chunk.pop_front $\delta$ $\pcvar{b_o}$ in
+      (mk_deep' $\delta$ {d with $\pcvar{b_o}$=$\pcvar{b_o}$'}, x)
+  else
+    let ($\pcvar{f_o}$', x) = Chunk.pop_front $\delta$ $\pcvar{f_o}$ in
+    (mk_deep' $\delta$ {d with $\pcvar{f_o}$=$\pcvar{f_o}$'}, x)
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+push_buffer_back : $\alpha$ chunk wf $\rightarrow$ $\alpha$ chunk chunkedseq $\times$ $\alpha$ chunk $\rightarrow$ $\alpha$ chunk chunkedseq
+push_buffer_back $\delta$ (s, c)  =
+  if Chunk.is_empty c then
+    s
+  else if is_empty s then
+    Shallow (Chunk.push_back $\delta$ (Chunk.empty, c))
+  else
+    let (cs', c') = pop_back' $\delta$ cs in
+    if Chunk.size c + Chunk.size c' $\leq$ Chunk.k then
+      push_back' $\delta$ (cs', Chunk.concat $\delta$ (c', c))
+    else
+      push_back' $\delta$ (cs, c)
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+transfer_contents_back : $\alpha$ wf $\rightarrow$ $\alpha$ chunkedseq $\times$ $\alpha$ chunk $\rightarrow$ $\alpha$ chunkedseq
+  if Chunk.is_empty c then
+    cs
+  else
+    let (c', x) = Chunk.pop_front $\delta$ c in
+    transfer_contents_back $\delta$ (push_back' $\delta$ (cs, x), c')
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+concat' : $\alpha$ wf $\rightarrow$ $\alpha$ chunkedseq $\times$ $\alpha$ chunkedseq $\rightarrow$ $\alpha$ chunkedseq
+concat' $\delta$ (Shallow $\pcvar{c_1}$, $\pcvar{s_2}$) =
+  transfer_contents_front $\delta$ ($\pcvar{s_2}$, $\pcvar{c_1}$)
+concat' $\delta$ ($\pcvar{s_1}$, Shallow $\pcvar{c_2}$) =
+  transfer_contents_back $\delta$ ($\pcvar{s_1}$, $\pcvar{c_2}$)
+concat' $\delta$ ($\pcvar{s_1}$ as Deep (_, {$\pcvar{f_o}$=$\pcvar{f_{o_1}}$, $\pcvar{f_i}$=$\pcvar{f_{i_1}}$, m=$\pcvar{m_1}$, $\pcvar{b_i}$=$\pcvar{b_{i_1}}$, $\pcvar{b_o}$=$\pcvar{b_{o_1}}$}),
+           $\pcvar{s_2}$ as Deep (_, {$\pcvar{f_o}$=$\pcvar{f_{o_2}}$, $\pcvar{f_i}$=$\pcvar{f_{i_2}}$, m=$\pcvar{m_2}$, $\pcvar{b_i}$=$\pcvar{b_{i_2}}$, $\pcvar{b_o}$=$\pcvar{b_{o_2}}$})) =
+  let $\pcvar{m_1}$' = push_buffer_back Chunk.weight ($\pcvar{m_1}$, $\pcvar{b_{i_1}}$) in
+  let $\pcvar{m_1}$'' = push_buffer_back Chunk.weight ($\pcvar{m_1}$', $\pcvar{b_{o_1}}$) in
+  let $\pcvar{m_2}$' = push_buffer_front Chunk.weight ($\pcvar{m_2}$, $\pcvar{f_{i_2}}$) in
+  let $\pcvar{m_2}$'' = push_buffer_front Chunk.weight ($\pcvar{m_2}$', $\pcvar{f_{o_2}}$) in
+  let ($\pcvar{m_1}$''', $\pcvar{m_2}$''') =
+    if is_empty $\pcvar{m_1}$'' $\vee$ is_empty $\pcvar{m_2}$'' then
+      ($\pcvar{m_1}$'', $\pcvar{m_2}$'')
+    else
+      let ($\pcvar{m_1}$''', $\pcvar{c_1}$) = pop_back' Chunk.weight $\pcvar{m_1}$'' in
+      let ($\pcvar{m_2}$''', $\pcvar{c_2}$) = pop_front' Chunk.weight $\pcvar{m_2}$'' in
+      if Chunk.weight $\pcvar{c_1}$ + Chunk.weight $\pcvar{c_2}$ $\leq$ K then
+        let c' = Chunk.concat $\delta$ ($\pcvar{c_1}$, $\pcvar{c_2}$) in
+        (push_back' Chunk.weight ($\pcvar{m_1}$''', c'), $\pcvar{m_2}$''')
+      else
+        ($\pcvar{m_1}$'', $\pcvar{m_2}$'')
+  let $\pcvar{m_{1_2}}$ = concat' Chunk.weight ($\pcvar{m_1}$''', $\pcvar{m_2}$''') in
+  mk_deep' $\delta$ {$\pcvar{f_o}$=$\pcvar{f_{o_1}}$, $\pcvar{f_i}$=$\pcvar{f_{i_1}}$, m=$\pcvar{m_{1_2}}$, $\pcvar{b_i}$=$\pcvar{b_{i_2}}$, $\pcvar{b_o}$=$\pcvar{b_{o_2}}$}
+\end{lstlisting}
+
+\begin{lstlisting}[language=pcpp,style=nonumbers]
+split' : $\alpha$ wf $\rightarrow$ $\alpha$ chunkedseq $\times$ int $\rightarrow$ ($\alpha$ chunkedseq $\times$ $\alpha$ $\times$ $\alpha$ chunkedseq)
+split' $\delta$ (Shallow c, i) =
+  let ($\pcvar{c_1}$, x, $\pcvar{c_2}$) = Chunk.split $\delta$ (c, i) in
+  (Shallow $\pcvar{c_1}$, x, Shallow $\pcvar{c_2}$)
+split' $\delta$ (Deep (_, {$\pcvar{f_o}$, $\pcvar{f_i}$, m, $\pcvar{b_i}$, $\pcvar{b_o}$} as d), i) =
+  let ($\pcvar{wf_o}$, $\pcvar{wf_i}$) = (Chunk.weight $\pcvar{f_o}$, Chunk.weight $\pcvar{f_i}$) in
+  let $\pcvar{w_m}$ = weight m in
+  let ($\pcvar{wb_i}$, $\pcvar{wb_o}$) = (Chunk.weight $\pcvar{b_i}$, Chunk.weight $\pcvar{b_o}$) in
+  let ($\pcvar{s_1}$, x, $\pcvar{s_2}$) = 
+    if i < $\pcvar{wf_o}$ then
+      let ($\pcvar{f_{o_1}}$, x, $\pcvar{f_{o_2}}$) = Chunk.split $\delta$ ($\pcvar{f_o}$, i) in
+      let $\pcvar{s_1}$ = mk_deep {$\pcvar{f_o}$=$\pcvar{f_{o_1}}$, $\pcvar{f_i}$=Chunk.empty, m=Shallow Chunk.empty, $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=Chunk.empty} in
+      let $\pcvar{s_2}$ = mk_deep {d with $\pcvar{f_o}$=$\pcvar{f_{o_2}}$} in
+      ($\pcvar{s_1}$, x, $\pcvar{s_2}$)
+    else if i < $\pcvar{wf_o}$ + $\pcvar{wf_i}$ then
+      let j = i - $\pcvar{wf_o}$ in
+      let ($\pcvar{f_{i_1}}$, x, $\pcvar{f_{i_2}}$) = Chunk.split $\delta$ ($\pcvar{f_i}$, j) in
+      let $\pcvar{s_1}$ = mk_deep {d with $\pcvar{f_i}$=Chunk.empty, m=Shallow Chunk.empty, $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=$\pcvar{f_{i_1}}$} in
+      let $\pcvar{s_2}$ = mk_deep {d with $\pcvar{f_o}$=$\pcvar{f_{i_2}}$, $\pcvar{f_i}$=Chunk.empty} in
+      ($\pcvar{s_1}$, x, $\pcvar{s_2}$)
+    else if i < $\pcvar{wf_o}$ + $\pcvar{wf_i}$ + $\pcvar{w_m}$ then
+      let j = i - $\pcvar{wf_o}$ - $\pcvar{wf_i}$ in
+      let ($\pcvar{m_1}$, c, $\pcvar{m_2}$) = split' Chunk.weight (m, j) in
+      let ($\pcvar{c_1}$, x, $\pcvar{c_2}$) = Chunk.split $\delta$ (c, j - weight $\pcvar{m_1}$) in
+      let $\pcvar{s_1}$ = mk_deep {d with m=$\pcvar{m_1}$, $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=$\pcvar{c_1}$} in
+      let $\pcvar{s_2}$ = mk_deep {d with $\pcvar{f_o}$=$\pcvar{c_2}$, $\pcvar{f_i}$=Chunk.empty, m=$\pcvar{m_2}$} in
+      ($\pcvar{s_1}$, x, $\pcvar{s_2}$)
+    else if i < $\pcvar{wf_o}$ + $\pcvar{wf_i}$ + $\pcvar{w_m}$ + $\pcvar{wb_i}$ then
+      let j = i - $\pcvar{wf_o}$ - $\pcvar{wf_i}$ - $\pcvar{w_m}$ in
+      let ($\pcvar{b_{i_1}}$, x, $\pcvar{b_{i_2}}$) = Chunk.split $\delta$ ($\pcvar{b_i}$, j) in
+      let $\pcvar{s_1}$ = mk_deep {d with $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=$\pcvar{b_{i_1}}$} in
+      let $\pcvar{s_2}$ = mk_deep {d with $\pcvar{f_o}$=$\pcvar{b_{i_2}}$, $\pcvar{f_i}$=Chunk.empty, m=Shallow Chunk.empty, $\pcvar{b_i}$=Chunk.empty} in
+      ($\pcvar{s_1}$, x, $\pcvar{s_2}$)
+    else
+      let j = i - $\pcvar{wf_o}$ - $\pcvar{wf_i}$ - $\pcvar{w_m}$ - $\pcvar{wb_i}$ in
+      let ($\pcvar{b_{o_1}}$, x, $\pcvar{b_{o_2}}$) = Chunk.split $\delta$ ($\pcvar{b_o}$, j) in
+      let $\pcvar{s_1}$ = mk_deep {d with $\pcvar{b_o}$=$\pcvar{b_{o_1}}$} in
+      let $\pcvar{s_2}$ = mk_deep {$\pcvar{f_o}$=$\pcvar{b_{o_2}}$, $\pcvar{f_i}$=Chunk.empty, m=Shallow Chunk.empty, $\pcvar{b_i}$=Chunk.empty, $\pcvar{b_o}$=Chunk.empty} in
+      ($\pcvar{s_1}$, x, $\pcvar{s_2}$)
+  in
+  (check $\delta$ $\pcvar{s_1}$, x, check $\delta$ $\pcvar{s_2}$)
 \end{lstlisting}
 
 \begin{figure}
