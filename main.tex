@@ -80,7 +80,7 @@ pagebackref=true
   {\color{blue}{\textbf{Point.}#1}}\smallskip}
 \newcommand{\q}[1]{\noindent {\color{red}{\textbf{Question:} #1}}\smallskip}
 
-\title{Flexible chunked sequences from simple rules}
+\title{Asymptotically efficient, low friction, splittable, and concatenable deques from simple algorithmic principles}
 \author{}
 
 %%% this package has to be right before begin{doc}
@@ -92,12 +92,135 @@ pagebackref=true
 %******************************************************************************
 \section{Introduction}
 
+
 \paragraph{Sequence notation.} We are going to use the usual mathematical
 notation for sequences: the sequence $xs = [x_0, \ldots, x_n]$
 contains $n + 1$ elements, starting with $x_0$ and ending with
 $x_n$. Given two sequences, $xs = [x_0, \ldots, x_n]$ and $xs = [y_0,
   \ldots, y_m]$, we denote the concatenation by $xs \oplus ys = [x_0,
   \ldots, x_n, y_0, \ldots, y_m]$.
+
+\begin{figure}
+  \begin{center}
+    \begin{tabular}{>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}}
+
+  \speccode{empty}  & : & \tydequesplitconcat{\alpha} & = & []\\
+      
+  \speccode{push\_front} \, xs \, x & : & \tydequesplitconcat{\alpha} \rightarrow \alpha & = & [x] \oplus xs \\
+  & & \quad \rightarrow \tydequesplitconcat{\alpha} & & \\
+  
+  \speccode{pop\_front} \, xs & : & \tydequesplitconcat{\alpha} & = & \left\{
+  \begin{array}{l l}
+    xs' & \quad \text{if}\ xs = [x] \oplus xs' \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow ((\alpha \times \tydequesplitconcat{\alpha}) \cup \{ \bot \}) & & \\
+
+  \speccode{push\_back} \, xs \, x & : & \tydequesplitconcat{\alpha} \rightarrow \alpha & = & xs \oplus [x]\\
+  & & \quad \rightarrow (\tydequesplitconcat{\alpha} \cup \{ \bot \}) & & \\
+  
+  \speccode{pop\_back} \, xs & : & \tydequesplitconcat{\alpha} & = & \left\{
+  \begin{array}{l l}
+    xs' & \quad \text{if}\ xs = xs' \oplus [x] \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow ((\alpha \times \tydequesplitconcat{\alpha}) \cup \{ \bot \}) & & \\
+
+  \speccode{concat} \, xs_1 \, xs_2 & : & \tydequesplitconcat{\alpha} \rightarrow \tydequesplitconcat{\alpha} & = & xs_1 \oplus xs_2 \\
+  & & \quad \rightarrow \tydequesplitconcat{\alpha} & & \\
+
+  \speccode{split} \, xs \, i & : & \tydequesplitconcat{\alpha} \rightarrow \tyname{N} & = & \left\{
+  \begin{array}{l l}
+    (xs_1, x, xs_2) & \quad \text{if}\ xs = xs_1 \oplus [x_i] \oplus xs_2 \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow ((\tydequesplitconcat{\alpha} \times \alpha \times \tydequesplitconcat{\alpha}) \cup \{ \bot \}) & & \\
+      \end{tabular}
+    \end{center}
+  \caption{Specification of the abstract data type $\tydequesplitconcat{\alpha}$, representing a sequence of values of type $\alpha$, which supports deque operations (i.e., push and pop on the front and back), split at a specified position, and concatenation. We use the type $\tau \cup \{ \bot \}$ to represent the result of an operation that either returns a result of type $\tau$ or fails due to an ill-formed input.}
+\label{fig:seq-specification}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \begin{tabular}{>{$}l<{$}>{$}c<{$}>{$}l<{$}}
+      \text{Operation} & \text{Result} & \text{Cost}  \\ \hline
+      \speccode{push\_front} \, xs \, x & [x] \oplus xs & \costofpushpop \\
+      \speccode{pop\_front} \, ([x] \oplus xs) & xs & \costofpushpop \\
+      \speccode{push\_back} \, xs \, x & xs \oplus [x] & \costofpushpop \\
+      \speccode{pop\_back} \, (xs \oplus [x]) & xs & \costofpushpop \\
+      \speccode{concat} \, xs_1 \, xs_2 & xs_1 \oplus xs_2 & \costofconcat{\min(|xs_1|,|xs_2|)}\\
+      \speccode{split} \, (xs_1 \oplus [x_i] \oplus xs_2) \, i & (xs_1, x_i, xs_2) & \costofsplit{\min(|xs_1|,|xs_2|)} \\
+    \end{tabular}
+    \end{center}
+  \caption{Cost specification of the abstract data type $\tydequesplitconcat{\alpha}$.}
+\label{fig:seq-specification}
+\end{figure}
+
+\begin{figure}
+  \begin{center}
+    \begin{tabular}{>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}}
+
+  \speccode{empty}  & : & \tychunk{\alpha}{K} & = & []\\
+      
+  \speccode{push\_front} \, \delta \, (w, xs) \, x & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \alpha & = & \left\{
+  \begin{array}{l l}
+    (w', [x] \oplus xs) & \quad \text{if}\ |xs| < K \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow (\tychunk{\alpha}{K} \cup \{ \bot \}) & & \\
+  & \multicolumn{2}{l}{$\text{where} \, w' = \delta x + w$} \\
+  
+  \speccode{pop\_front} \, \delta \, (w, xs) & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} & = & \left\{
+  \begin{array}{l l}
+    (w', xs') & \quad \text{if}\ xs = [x] \oplus xs' \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow ((\alpha \times \tychunk{\alpha}{K}) \cup \{ \bot \}) & & \\
+  & \multicolumn{2}{l}{$\text{where} \, w' = w - \delta x$} \\
+
+  \speccode{push\_back} \, \delta \, (w, xs) \, x & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \alpha & = & \left\{
+  \begin{array}{l l}
+    (w', xs \oplus [x]) & \quad \text{if}\ |xs| < K \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow (\tychunk{\alpha}{K} \cup \{ \bot \}) & & \\
+  & \multicolumn{2}{l}{$\text{where} \, w' = \delta x + w$} \\
+  
+  \speccode{pop\_back} \, \delta \, (w, xs) & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} & = & \left\{
+  \begin{array}{l l}
+    (w', xs') & \quad \text{if}\ xs = xs' \oplus [x] \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow ((\alpha \times \tychunk{\alpha}{K}) \cup \{ \bot \}) & & \\
+  & \multicolumn{2}{l}{$\text{where} \, w' = w - \delta x$} \\
+
+  \speccode{concat} \, \delta \, (w_1, xs_1) \, (w_2, xs_2) & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \tychunk{\alpha}{K} & = & \left\{
+  \begin{array}{l l}
+    (w', xs_1 \oplus xs_2) & \quad \text{if}\ |xs_1| + |xs_2| \leq K \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow (\tychunk{\alpha}{K} \cup \{ \bot \}) & & \\
+  & \multicolumn{2}{l}{$\text{where} \, w' = w_1 + w_2$} \\
+
+  \speccode{split} \, \delta \, (w, xs_1 \oplus [x] \oplus xs_2) \, i & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \tyname{N} & = & \left\{
+  \begin{array}{l l}
+    ((w_1, xs_1), x_i, (w_2, xs_2)) & \quad \text{if}\ w_1 \leq i < w_1 + \delta x \\
+    \bot & \quad \text{otherwise}
+  \end{array} \right. \\
+  & & \quad \rightarrow (\tysplitchunk{\alpha}{K} \cup \{ \bot \}) & & \\
+  & \multicolumn{3}{l}{$\text{where} \, w_1 = \Sigma_{x \in xs_1} \, \delta x \, \text{and} \, w_2 = \Sigma_{x \in xs_2} \, \delta x$} \\
+
+\end{tabular}
+  \end{center}
+  \begin{displaymath}
+    \text{where} \, \tysplitchunk{\alpha}{K} = (\tychunk{\alpha}{K} \times \alpha \times \tychunk{\alpha}{K})
+  \end{displaymath}
+  \caption{Specification of chunks.}
+\label{fig:chunk-specification}
+\end{figure}
+
+\section{Bootstrapped chunked sequence}
 
 \begin{lstlisting}[language=pcpp,style=nonumbers]
 type weight = int
@@ -106,7 +229,7 @@ type $\alpha$ wf = ($\alpha$ $\rightarrow$ weight)
 
 type $\alpha$ chunkedseq
   = Shallow of $\alpha$ chunk
-  | Deep of int $\times$ $\alpha$ deep
+  | Deep of weight $\times$ $\alpha$ deep
 
 type $\alpha$ deep = {
   $\pcvar{f_o}$ : $\alpha$ chunk, $\pcvar{f_i}$ : $\alpha$ chunk,
@@ -289,115 +412,6 @@ split' $\delta$ (Deep (_, {$\pcvar{f_o}$, $\pcvar{f_i}$, m, $\pcvar{b_i}$, $\pcv
   in
   (check $\delta$ $\pcvar{s_1}$, x, check $\delta$ $\pcvar{s_2}$)
 \end{lstlisting}
-
-\begin{figure}
-  \begin{center}
-    \begin{tabular}{>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}}
-
-  \speccode{empty}  & : & \tychunkedseq{\alpha} & = & []\\
-      
-  \speccode{push\_front} \, xs \, x & : & \tychunkedseq{\alpha} \rightarrow \alpha & = & [x] \oplus xs \\
-  & & \quad \rightarrow \tychunkedseq{\alpha} & & \\
-  & \multicolumn{2}{l}{$\text{where} \, w' = \delta x + w$} \\
-  
-  \speccode{pop\_front} \, xs & : & \tychunkedseq{\alpha} & = & \left\{
-  \begin{array}{l l}
-    xs' & \quad \text{if}\ xs = [x] \oplus xs' \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow ((\alpha \times \tychunkedseq{\alpha}) \cup \{ \bot \}) & & \\
-
-  \speccode{push\_back} \, xs \, x & : & \tychunkedseq{\alpha} \rightarrow \alpha & = & xs \oplus [x]\\
-  & & \quad \rightarrow (\tychunkedseq{\alpha} \cup \{ \bot \}) & & \\
-  
-  \speccode{pop\_back} \, xs & : & \tychunkedseq{\alpha} & = & \left\{
-  \begin{array}{l l}
-    xs' & \quad \text{if}\ xs = xs' \oplus [x] \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow ((\alpha \times \tychunkedseq{\alpha}) \cup \{ \bot \}) & & \\
-
-  \speccode{concat} \, xs_1 \, xs_2 & : & \tychunkedseq{\alpha} \rightarrow \tychunkedseq{\alpha} & = & xs_1 \oplus xs_2 \\
-  & & \quad \rightarrow \tychunkedseq{\alpha} & & \\
-
-  \speccode{split} \, xs \, i & : & \tychunkedseq{\alpha} \rightarrow \tyname{N} & = & \left\{
-  \begin{array}{l l}
-    (xs_1, x, xs_2) & \quad \text{if}\ xs = xs_1 \oplus [x_i] \oplus xs_2 \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow (\tysplitchunkedseq{\alpha} \cup \{ \bot \}) & & \\
-
-\end{tabular}
-  \end{center}
-    \begin{displaymath}
-    \text{where} \, \tysplitchunkedseq{\alpha} = (\tychunkedseq{\alpha} \times \alpha \times \tychunkedseq{\alpha})
-  \end{displaymath}
-  \caption{Specification of chunked sequences.}
-\label{fig:chunkedseq-specification}
-\end{figure}
-
-\begin{figure}
-  \begin{center}
-    \begin{tabular}{>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}>{$}c<{$}>{$}l<{$}}
-
-  \speccode{empty}  & : & \tychunk{\alpha}{K} & = & []\\
-      
-  \speccode{push\_front} \, \delta \, (w, xs) \, x & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \alpha & = & \left\{
-  \begin{array}{l l}
-    (w', [x] \oplus xs) & \quad \text{if}\ |xs| < K \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow (\tychunk{\alpha}{K} \cup \{ \bot \}) & & \\
-  & \multicolumn{2}{l}{$\text{where} \, w' = \delta x + w$} \\
-  
-  \speccode{pop\_front} \, \delta \, (w, xs) & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} & = & \left\{
-  \begin{array}{l l}
-    (w', xs') & \quad \text{if}\ xs = [x] \oplus xs' \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow ((\alpha \times \tychunk{\alpha}{K}) \cup \{ \bot \}) & & \\
-  & \multicolumn{2}{l}{$\text{where} \, w' = w - \delta x$} \\
-
-  \speccode{push\_back} \, \delta \, (w, xs) \, x & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \alpha & = & \left\{
-  \begin{array}{l l}
-    (w', xs \oplus [x]) & \quad \text{if}\ |xs| < K \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow (\tychunk{\alpha}{K} \cup \{ \bot \}) & & \\
-  & \multicolumn{2}{l}{$\text{where} \, w' = \delta x + w$} \\
-  
-  \speccode{pop\_back} \, \delta \, (w, xs) & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} & = & \left\{
-  \begin{array}{l l}
-    (w', xs') & \quad \text{if}\ xs = xs' \oplus [x] \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow ((\alpha \times \tychunk{\alpha}{K}) \cup \{ \bot \}) & & \\
-  & \multicolumn{2}{l}{$\text{where} \, w' = w - \delta x$} \\
-
-  \speccode{concat} \, \delta \, (w_1, xs_1) \, (w_2, xs_2) & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \tychunk{\alpha}{K} & = & \left\{
-  \begin{array}{l l}
-    (w', xs_1 \oplus xs_2) & \quad \text{if}\ |xs_1| + |xs_2| \leq K \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow (\tychunk{\alpha}{K} \cup \{ \bot \}) & & \\
-  & \multicolumn{2}{l}{$\text{where} \, w' = w_1 + w_2$} \\
-
-  \speccode{split} \, \delta \, (w, xs_1 \oplus [x] \oplus xs_2) \, i & : & \tywf{\alpha} \rightarrow \tychunk{\alpha}{K} \rightarrow \tyname{N} & = & \left\{
-  \begin{array}{l l}
-    ((w_1, xs_1), x, (w_2, xs_2)) & \quad \text{if}\ w_1 \leq i < w_1 + \delta x \\
-    \bot & \quad \text{otherwise}
-  \end{array} \right. \\
-  & & \quad \rightarrow (\tysplitchunk{\alpha}{K} \cup \{ \bot \}) & & \\
-  & \multicolumn{3}{l}{$\text{where} \, w_1 = \Sigma_{x \in xs_1} \, \delta x \, \text{and} \, w_2 = \Sigma_{x \in xs_2} \, \delta x$} \\
-
-\end{tabular}
-  \end{center}
-  \begin{displaymath}
-    \text{where} \, \tysplitchunk{\alpha}{K} = (\tychunk{\alpha}{K} \times \alpha \times \tychunk{\alpha}{K})
-  \end{displaymath}
-  \caption{Specification of chunks.}
-\label{fig:chunk-specification}
-\end{figure}
 
 \bibliographystyle{plain}
 \bibliography{biblio}
